@@ -1,0 +1,8 @@
+1.Reads commands from standard input and execute them in a loop until a built-in command exit is issued
+2.Redirects the standard input and output of commands by prefixing them with built-in commands in file and out file;
+3. Terminates (involuntarily) the foreground process when user presses ^C and return back to the mini-shell;
+4. Interrupts the foreground process temporarily, when user presses ^Z, returning to the mini-shell;
+5. Executes any number of processes in background (i.e., in parallel with the foreground process),including in particular, the ability to start another process while a process has been temporarily suspended;
+6. Informs the user when the background process finishes or is waiting for an input from the terminal;
+7. Informs the user what commands are executing in the background by issuing the built-in command jobs, this should include information about the state of the process (i.e., suspended, background, waiting for input, etc.) and about what file(s) is the background process using for standard input and output);
+8. Terminates involuntarily a background processes by issuing the built-in command kill job-number.
