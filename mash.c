@@ -1,4 +1,25 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <termios.h>
+
+
+#define TRUE 1
+#define FALSE !TRUE
+
+#define BUFFER_MAX_LENGTH 50
+static char* currentDirectory;
+static char userInput = '\0';
+static char buffer[BUFFER_MAX_LENGTH];
+static int bufferChars = 0;
+
+static char *commandArgv[5];
+static int commandArgc = 0;
 
 void getTextLine()
 {
