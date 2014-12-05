@@ -64,6 +64,39 @@ void shellPrompt()
         printf("%s :> ",getcwd(currentDirectory, 1024));
 }
 
+void init()
+{
+        MSH_PID = getpid();
+        MSH_TERMINAL = STDIN_FILENO;
+        MSH_IS_INTERACTIVE = isatty(MSH_TERMINAL);
+
+        if (MSH_IS_INTERACTIVE) {
+                while (tcgetpgrp(MSH_TERMINAL) != (MSH_PGID = getpgrp()))
+                        kill(MSH_PID, SIGTTIN);
+
+                signal(SIGQUIT, SIG_IGN);
+                signal(SIGTTOU, SIG_IGN);
+                signal(SIGTTIN, SIG_IGN);
+                signal(SIGTSTP, SIG_IGN);
+                signal(SIGINT, SIG_IGN);
+                signal(SIGCHLD, &signalHandler_child);
+
+                setpgid(MSH_PID, MSH_PID);
+                MSH_PGID = getpgrp();
+                if (MSH_PID != MSH_PGID) {
+                        printf("Error, the shell is not process group leader");
+                        exit(EXIT_FAILURE);
+                }
+                if (tcsetpgrp(MSH_TERMINAL, MSH_PGID) == -1)
+                        tcgetattr(MSH_TERMINAL, &MSH_TMODES);
+
+                currentDirectory = (char*) calloc(1024, sizeof(char));
+        } else {
+                printf("Could not make MSH interactive. Exiting..\n");
+                exit(EXIT_FAILURE);
+        }
+}
+
 int main(int argc, char **argv, char **envp)
 {
         init();
