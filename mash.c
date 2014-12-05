@@ -21,6 +21,11 @@ static int bufferChars = 0;
 static char *commandArgv[5];
 static int commandArgc = 0;
 
+static pid_t MSH_PID;
+static pid_t MSH_PGID;
+static int MSH_TERMINAL, MSH_IS_INTERACTIVE;
+static struct termios MSH_TMODES;
+
 void getTextLine()
 {
         destroyCommand();
