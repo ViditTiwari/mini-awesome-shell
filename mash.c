@@ -26,6 +26,26 @@ static pid_t MSH_PGID;
 static int MSH_TERMINAL, MSH_IS_INTERACTIVE;
 static struct termios MSH_TMODES;
 
+void getTextLine();
+
+void populateCommand();
+
+void destroyCommand();
+void welcomeScreen();
+
+void shellPrompt();
+void handleUserCommand();
+
+int checkBuiltInCommands();
+
+void executeCommand(char *command[], char *file, int newDescriptor,
+                    int executionMode);
+void changeDirectory();
+
+void init();
+
+
+
 void handleUserCommand()
 {
     if (checkBuiltInCommands() == 0) {
@@ -136,6 +156,17 @@ void executeCommand(char *command[], char *file, int newDescriptor,
         }
         if (execvp(*command, command) == -1)
                 perror("MSH");
+}
+
+void changeDirectory()
+{
+        if (commandArgv[1] == NULL) {
+                chdir(getenv("HOME"));
+        } else {
+                if (chdir(commandArgv[1]) == -1) {
+                        printf(" %s: no such directory\n", commandArgv[1]);
+                }
+        }
 }
 
 void getTextLine()
