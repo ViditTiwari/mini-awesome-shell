@@ -26,6 +26,118 @@ static pid_t MSH_PGID;
 static int MSH_TERMINAL, MSH_IS_INTERACTIVE;
 static struct termios MSH_TMODES;
 
+void handleUserCommand()
+{
+    if (checkBuiltInCommands() == 0) {
+        
+        launchJob(commandArgv, "STANDARD", 0, FOREGROUND);
+                              //puts(commandArgv[1]);
+        }
+}
+
+int checkBuiltInCommands()
+{
+        if (strcmp("exit", commandArgv[0]) == 0) {
+                exit(EXIT_SUCCESS);
+        }
+        if (strcmp("cd", commandArgv[0]) == 0) {
+
+                changeDirectory();
+                return 1;
+        }
+       /* if (strcmp("in", commandArgv[0]) == 0) {
+                launchJob(commandArgv + 2, *(commandArgv + 1), STDIN, FOREGROUND);
+                return 1;
+        }
+        if (strcmp("out", commandArgv[0]) == 0) {
+                launchJob(commandArgv + 2, *(commandArgv + 1), STDOUT, FOREGROUND);
+                return 1;
+        }*/
+        if (strcmp("bg", commandArgv[0]) == 0) {
+                if (commandArgv[1] == NULL)
+                        return 0;
+                if (strcmp("in", commandArgv[1]) == 0)
+                        launchJob(commandArgv + 3, *(commandArgv + 2), STDIN, BACKGROUND);
+                else if (strcmp("out", commandArgv[1]) == 0)
+                        launchJob(commandArgv + 3, *(commandArgv + 2), STDOUT, BACKGROUND);
+                else
+                        launchJob(commandArgv + 1, "STANDARD", 0, BACKGROUND);
+                return 1;
+        }
+        if (strcmp("fg", commandArgv[0]) == 0) {
+                if (commandArgv[1] == NULL)
+                        return 0;
+                int jobId = (int) atoi(commandArgv[1]);
+                t_job* job = getJob(jobId, BY_JOB_ID);
+                if (job == NULL)
+                        return 0;
+                if (job->status == SUSPENDED || job->status == WAITING_INPUT)
+                        putJobForeground(job, TRUE);
+                else                                                                                                // status = BACKGROUND
+                        putJobForeground(job, FALSE);
+                return 1;
+        }
+        if (strcmp("jobs", commandArgv[0]) == 0) {
+                printJobs();
+                return 1;
+        }
+        if (strcmp("kill", commandArgv[0]) == 0)
+        {
+                if (commandArgv[1] == NULL)
+                        return 0;
+                killJob(atoi(commandArgv[1]));
+                return 1;
+        }
+        //int i;
+        ////for( i=0;i<=commandArgc;i++)
+        //{
+        //char *str;
+        //strcpy(str,commandArgv);
+        if( commandArgc == 3 )
+        {
+        if(strcmp("|", commandArgv[1]) == 0  )
+            {
+            pipelining(2);
+            return 1;
+            }
+            //return 1;
+        }
+    if( commandArgc > 3 )
+{
+        if(strcmp("|", commandArgv[commandArgc-2]) == 0 )
+        {
+            //puts("works");
+            //printf("%d",commandArgc);
+            pipelining(commandArgc-1);
+            return 1;
+        }
+    }
+        //break;
+        //}
+
+
+
+        return 0;
+}
+
+void executeCommand(char *command[], char *file, int newDescriptor,
+                    int executionMode)
+{
+        int commandDescriptor;
+        if (newDescriptor == STDIN) {
+                commandDescriptor = open(file, O_RDONLY, 0600);
+                dup2(commandDescriptor, STDIN_FILENO);
+                close(commandDescriptor);
+        }
+        if (newDescriptor == STDOUT) {
+                commandDescriptor = open(file, O_CREAT | O_TRUNC | O_WRONLY, 0600);
+                dup2(commandDescriptor, STDOUT_FILENO);
+                close(commandDescriptor);
+        }
+        if (execvp(*command, command) == -1)
+                perror("MSH");
+}
+
 void getTextLine()
 {
         destroyCommand();
