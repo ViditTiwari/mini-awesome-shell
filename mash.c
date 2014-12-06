@@ -212,6 +212,93 @@ void shellPrompt()
         printf("%s :> ",getcwd(currentDirectory, 1024));
 }
 
+void launchJob(char *command[], char *file, int newDescriptor,
+               int executionMode)
+{
+        pid_t pid;
+        pid = fork();
+        switch (pid) {
+        case -1:
+                perror("MSH");
+                exit(EXIT_FAILURE);
+                break;
+        case 0:
+                signal(SIGINT, SIG_DFL);
+                signal(SIGQUIT, SIG_DFL);
+                signal(SIGTSTP, SIG_DFL);
+                signal(SIGCHLD, &signalHandler_child);
+                signal(SIGTTIN, SIG_DFL);
+                usleep(20000);
+                setpgrp();
+                if (executionMode == FOREGROUND)
+                        tcsetpgrp(MSH_TERMINAL, getpid());
+                if (executionMode == BACKGROUND)
+                        printf("[%d] %d\n", ++numActiveJobs, (int) getpid());
+
+                executeCommand(command, file, newDescriptor, executionMode);
+
+                exit(EXIT_SUCCESS);
+                break;
+        default:
+                setpgid(pid, pid);
+
+                jobsList = insertJob(pid, pid, *(command), file, (int) executionMode);
+
+                t_job* job = getJob(pid, BY_PROCESS_ID);
+
+                if (executionMode == FOREGROUND) {
+                        putJobForeground(job, FALSE);
+                }
+                if (executionMode == BACKGROUND)
+                        putJobBackground(job, FALSE);
+                break;
+        }
+}
+
+void putJobForeground(t_job* job, int continueJob)
+{
+        job->status = FOREGROUND;
+        tcsetpgrp(MSH_TERMINAL, job->pgid);
+        if (continueJob) {
+                if (kill(-job->pgid, SIGCONT) < 0)
+                        perror("kill (SIGCONT)");
+        }
+
+        waitJob(job);
+        tcsetpgrp(MSH_TERMINAL, MSH_PGID);
+}
+
+void putJobBackground(t_job* job, int continueJob)
+{
+        if (job == NULL)
+                return;
+
+        if (continueJob && job->status != WAITING_INPUT)
+                job->status = WAITING_INPUT;
+        if (continueJob)
+                if (kill(-job->pgid, SIGCONT) < 0)
+                        perror("kill (SIGCONT)");
+
+        tcsetpgrp(MSH_TERMINAL, MSH_PGID);
+}
+
+void waitJob(t_job* job)
+{
+        int terminationStatus;
+        while (waitpid(job->pid, &terminationStatus, WNOHANG) == 0) {
+                if (job->status == SUSPENDED)
+                        return;
+        }
+        jobsList = delJob(job);
+}
+
+void killJob(int jobId)
+{
+        t_job *job = getJob(jobId, BY_JOB_ID);
+        kill(job->pid, SIGKILL);
+}
+
+
 void init()
 {
         MSH_PID = getpid();
